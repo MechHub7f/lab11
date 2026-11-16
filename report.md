@@ -101,10 +101,13 @@ prove. It also still counts calls, not residents.
 
 ![Bronx top 10 complaint types](figures/fig-borough-bronx.png)
 
-**Verification:** the five counts are the top of a single `value_counts()`;
-their sum equals the borough total (74,674) when all categories are
-included, and the shares are count ÷ 74,674. The address share is
-14,361 ÷ 22,216 = 64.64%.
+### Verification — Task 2
+
+| Number | Primary method | Second method | Same? |
+| --- | --- | --- | --- |
+| Bronx total | `len(sub)` → 74,674 | sum of all `value_counts()` rows → 74,674 | yes |
+| Top complaint | `value_counts().head(1)` → Noise 22,216 | `len` of the noise mask → 22,216 | yes |
+| Address share | 14,361 noise calls at 655 E 230 St | `len` of the address + noise mask → 14,361 | yes |
 
 ---
 
@@ -149,10 +152,13 @@ Task 2 can move a borough rate too.
 
 ![Complaints per 1,000 residents](figures/fig-borough-per1000.png)
 
-**Verification:** the Bronx is recomputed by plain calculator:
-74,674 ÷ 1,472,654 × 1,000 = **50.7071**, matching the table. The
-population sum is checked against 8.8 million, and the API response is
-checked for `application/json` before it is parsed.
+### Verification — Task 3
+
+| Number | Primary method | Second method | Same? |
+| --- | --- | --- | --- |
+| Population sum | API rows summed → 8,804,190 | published five-county total → 8,804,190 | yes |
+| Bronx per 1,000 | table → 50.7071 | 74,674 ÷ 1,472,654 × 1,000 → 50.7071 | yes |
+| Rank change | sort by raw count vs. per 1,000 | two orderings printed by the script | yes |
 
 ---
 
@@ -173,29 +179,31 @@ hours are stable.
 
 ### The night that is not like the others
 
-The day × hour heat map is mostly the same shape every night: a bright
-band at 21:00–23:00 and a dark band at 03:00–06:00. The exception is
-**2 November at 01:00**, with **308** noise calls, roughly double the other
-Sundays (113, 163, 144, 181). At 02:00 the count is 91, in line with the
-other Sundays (63, 72, 81, 150) rather than a doubled second pass.
-
-The likely cause is the end of daylight saving time. Clocks fell back from
-02:00 to 01:00 on 2 November 2025, so the 01:00–01:59 wall-clock hour
-occurred twice; the file stores local wall-clock text without a UTC offset,
-so both passes land in hour 1. Two checks rule out the boring explanations.
-First, the file has **zero duplicate `Unique Key`s** and **zero exact
-duplicate rows**, and the 308 rows at that hour have **308 distinct keys**.
-Second, those rows are spread across **248 distinct addresses** (the top
-address has only 10), so this is not one address bursting. The extra volume
-is a clock artifact, not duplicated or fabricated rows.
+The heat map is the same shape on most nights — a bright 21:00–23:00 band
+and a dark 03:00–06:00 band — but **2 November at 01:00** is the exception,
+with **308** noise calls versus 113–181 on the other Sundays, while 02:00 is
+91, in line with the other Sundays. The likely cause is the end of daylight
+saving time: clocks fell back from 02:00 to 01:00 that morning, so the
+01:00–01:59 wall-clock hour occurred twice and both passes land in hour 1.
+To rule out bad or duplicated rows, I checked that the file has **zero
+duplicate `Unique Key`s**, **zero exact duplicate rows**, and **308 distinct
+keys** among the 308 rows at that hour. To rule out a burst of real
+complaints, I checked that those rows are spread across **248 distinct
+addresses**, with the top address contributing only 10. The extra volume is
+therefore a clock artifact, not duplicated or fabricated data.
 
 ![Noise by day and hour](figures/fig-nights.png)
 
-**Verification:** the plotted peak (22:00) matches both
-`value_counts().idxmax()` and `np.bincount(...).argmax()`; both give 3,878.
-The heat peak (09:00, 2,799) matches the same two methods. The Sunday
-comparison is printed by the script, and the duplicate/unique-key checks
-are in `task4_night_and_day()`.
+### Verification — Task 4
+
+| Number | Primary method | Second method | Same? |
+| --- | --- | --- | --- |
+| Noise peak | `value_counts().idxmax()` → 22:00, 3,878 | `np.bincount(...).argmax()` → 22:00, 3,878 | yes |
+| Heat peak | `value_counts().idxmax()` → 09:00, 2,799 | `np.bincount(...).argmax()` → 09:00, 2,799 | yes |
+| Nov 2 01:00 volume | 308 rows in the day × hour table | 308 distinct `Unique Key`s; 0 duplicate keys/rows | yes |
+
+The Brooklyn split is printed by the script and shows the same 22:00 / 09:00
+peaks.
 
 ---
 
@@ -222,18 +230,20 @@ handled by **DPR**:
 - Closed: `11/12/2026 11:18:34 AM`
 - Elapsed: **8,995.7 hours = 374.8 days**
 
-For DPR, the mean is **917.5 h** but the median is **186.7 h**. The gap is
-a long right tail, not one bad row: the 75th percentile is 1,008 h, the
-90th is 3,137 h, **1,655** cases took over 30 days, and **727** took over
-90 days. The single longest case adds only 1.65 h to the mean by itself.
-So the mean describes the slow tail of multi-week/seasonal tree work, while
-the median describes the typical DPR case. The mean-vs-median gap is a
-statement about the shape of the distribution.
+For DPR, the mean is **917.5 h** but the median is **186.7 h**, a gap driven
+by a long right tail: the 75th percentile is 1,008 h, the 90th is 3,137 h,
+and **1,655** cases took over 30 days (727 over 90). The single longest case
+(8,995.7 h) adds only 1.65 h to the mean by itself, so the gap is not one bad
+row but the many multi-week/seasonal tree cases. The mean therefore describes
+the slow tail, while the median describes the typical DPR case.
 
-**Verification:** every agency median is recomputed with `numpy.median` on
-the plain array; the maximum difference from the pandas `groupby` median is
-`0.0000000000` h. The longest case is found by `idxmax()` on the elapsed
-hours and checked against the sorted head of the frame.
+### Verification — Task 5
+
+| Number | Primary method | Second method | Same? |
+| --- | --- | --- | --- |
+| Agency medians | pandas `groupby().median()` | `numpy.median` per agency | max difference `0.0000000000` h |
+| Longest case | `idxmax()` on elapsed hours | sorted head of the closed frame | yes, Unique Key 66705910 |
+| Open cases dropped | 304,905 − 300,769 | explicit `Closed Date` filter | 4,136 |
 
 ---
 
@@ -265,20 +275,17 @@ can measure the gap; it cannot explain it.
 
 ![Same job, different borough](figures/fig-same-job.png)
 
-**Verification:** the Bronx median is recomputed with
-`statistics.median` on a plain Python list: **30.815000 h**, exactly the
-`groupby` value. The open-case filter is visible in `task6_same_job()` and
-the count dropped (34) is stated above.
+### Verification — Task 6
+
+| Number | Primary method | Second method | Same? |
+| --- | --- | --- | --- |
+| Bronx median | pandas `groupby().median()` → 30.815000 h | `statistics.median` on a plain list → 30.815000 h | yes |
+| Open cases dropped | 47,946 − 47,912 | explicit `Closed Date` filter | 34 |
+| Fastest/slowest gap | 42.840 − 27.744 | 42.840 ÷ 27.744 − 1 = 54.4% | 15.10 h |
 
 ---
 
 ## Task 7 — Data detective: one address in Fresh Meadows
-
-The lecture already used 655 East 230 Street, so this is a different
-anomaly. **78-15 Parsons Boulevard** in Fresh Meadows, Queens (ZIP 11366)
-has **728 complaints** in November — the second-highest address count in
-the file. All 728 sit at one coordinate, `(40.721959, -73.809697)`, and
-they appear on all 30 days. The top problem types are:
 
 | Problem type | Count |
 | --- | ---: |
@@ -291,39 +298,32 @@ they appear on all 30 days. The top problem types are:
 | Illegal Parking | 46 |
 | Noise - Helicopter | 23 |
 
-The descriptors are dominated by **Car/Truck Horn** (261), plus
-**Use Outside** (77), **Noise: Alarms (NR3)** (72), **Loud Talking** (71),
-**Loud Music/Party** (68), and **Chronic Stoplight Violation** (35).
-NYPD handled 629 of the 728; the rest are DEP (76) and EDC (23). Status is
-705 Closed and 23 In Progress. The hourly shape peaks at **09:00 (117)**
-and **11:00 (110)**, i.e. daytime.
+**Five-sentence write-up:** The anomaly is **78-15 Parsons Boulevard** in
+Fresh Meadows, Queens (ZIP 11366), with **728 complaints** in November — the
+second-highest address count after the lecture's 655 East 230 Street — all
+at one coordinate `(40.721959, -73.809697)` and on all 30 days. The three
+queries were: `value_counts()` on `Incident Address` (728, rank #2);
+filtering that address and grouping by problem, descriptor, and agency (303
+Noise - Vehicle with 261 car/truck horn, 77 Drug Activity, 72 Noise -
+Residential, 72 Noise, 67 Noise - House of Worship, 64 Traffic, 46 Illegal
+Parking, 23 Noise - Helicopter; NYPD handled 629 of 728); and grouping by
+day/hour plus checking identifiers (728 unique keys, activity every day, a
+daytime peak at 09:00 with 117 and 11:00 with 110, one coordinate). The
+concentration is real in the file, not a duplicate-row artifact. But the
+file has no complainant ID, so a persistent noisy commercial/residential
+corner and a single resident filing hundreds of reports would look
+identical, and the daytime peak only weakly favors the hotspot story. The
+honest verdict is "cannot tell from this file alone" — I would need 311
+caller records, a site visit, or NYPD/DEP enforcement logs to separate a
+real hotspot from a coordinated complainant.
 
-**The three queries:**
+### Verification — Task 7
 
-1. `value_counts()` on `Incident Address` put Parsons at #2 (728), behind
-   only the lecture's 655 East 230 Street (14,362).
-2. Filtering that address and grouping by `Problem (formerly Complaint
-   Type)`, descriptor, and agency produced the noise/vehicle, drug, and
-   house-of-worship mix above, with NYPD as the main responder.
-3. Grouping by day and hour, and checking identifiers, showed 728 unique
-   keys, activity on every day, a daytime peak, and one coordinate.
-
-**Verdict (five sentences):** The concentration is real in the file, not a
-duplicate-row artifact. It looks like a persistent noisy
-commercial/residential corner — horns, drug activity, loud talking/music, a
-house of worship — rather than one random burst. But the file has no
-complainant ID, so a single resident filing hundreds of reports would look
-identical to a genuine hotspot. The daytime peak fits a
-street/transportation hotspot more than late-night party noise, which is
-weak evidence for the hotspot story but not proof. The honest verdict is
-"cannot tell from this file alone"; I would need 311 caller records, a site
-visit, or NYPD/DEP enforcement logs to separate a real hotspot from a
-coordinated complainant.
-
-**Verification:** the address count is `len(sub)` after an exact string
-filter and is checked against `value_counts()`; the unique-key count is
-`nunique()` and is checked against `len(sub)`; the coordinate count is a
-`drop_duplicates()` on the two coordinate columns (one row).
+| Number | Primary method | Second method | Same? |
+| --- | --- | --- | --- |
+| Address volume | exact string filter → 728 | `value_counts()` → 728 | yes |
+| Unique keys | `nunique()` → 728 | `len(sub)` → 728 | yes |
+| Coordinates | `drop_duplicates()` → 1 row | all rows share the same lat/lon | yes |
 
 ---
 
