@@ -156,7 +156,7 @@ Task 2 can move a borough rate too.
 
 | Number | Primary method | Second method | Same? |
 | --- | --- | --- | --- |
-| Population sum | API rows summed → 8,804,190 | published five-county total → 8,804,190 | yes |
+| Population sum | five county totals from `fetch_populations()` summed → 8,804,190 | published five-county total → 8,804,190 | yes |
 | Bronx per 1,000 | table → 50.7071 | 74,674 ÷ 1,472,654 × 1,000 → 50.7071 | yes |
 | Rank change | sort by raw count vs. per 1,000 | two orderings printed by the script | yes |
 
@@ -179,12 +179,14 @@ hours are stable.
 
 ### The night that is not like the others
 
-The heat map is the same shape on most nights — a bright 21:00–23:00 band
-and a dark 03:00–06:00 band — but **2 November at 01:00** is the exception,
-with **308** noise calls versus 113–181 on the other Sundays, while 02:00 is
-91, in line with the other Sundays. The likely cause is the end of daylight
-saving time: clocks fell back from 02:00 to 01:00 that morning, so the
-01:00–01:59 wall-clock hour occurred twice and both passes land in hour 1.
+The day × hour table behind the heat map is 30 rows (one date) by 24 columns
+(one hour), with counts in the cells. Most nights show the same shape — a
+bright 21:00–23:00 band and a dark 03:00–06:00 band — but **2 November at
+01:00** is the exception, with **308** noise calls versus 113–181 on the other
+Sundays, while 02:00 is 91, in line with the other Sundays. The likely cause
+is the end of daylight saving time: clocks fell back from 02:00 to 01:00 that
+morning, so the 01:00–01:59 wall-clock hour occurred twice and both passes
+land in hour 1.
 To rule out bad or duplicated rows, I checked that the file has **zero
 duplicate `Unique Key`s**, **zero exact duplicate rows**, and **308 distinct
 keys** among the 308 rows at that hour. To rule out a burst of real
@@ -359,8 +361,14 @@ mkdir -p data
 curl -o data/nyc-311-2025-november.csv.gz \
   https://files.homework.quest/cs2010/nyc-311-2025-november.csv.gz
 python3 -m pip install -r requirements.txt
-CENSUS_API_KEY=your_key_here python3 analysis.py
+export CENSUS_API_KEY=...   # Task 3a only; see README
+./run.sh
 ```
+
+`run.sh` picks the key up from `.env` (gitignored) or the environment. A keyed
+run reports `Population source: Census API 2020 PL (P1_001N)`; without a key
+the API returns its HTML error page, the script says so, and it finishes on the
+same published 2020 totals.
 
 The script prints every number used above and writes the five figures into
 `figures/`.
