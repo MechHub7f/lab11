@@ -125,9 +125,19 @@ The five boroughs are five counties. The 2020 Census PL totals
 | Staten Island | Richmond County / 36085 | 495,747 |
 
 The five add to **8,804,190**, which passes the ~8.8 million sanity check.
-The API call is in `fetch_populations()` and reads the key from
-`CENSUS_API_KEY`; if the key is missing or the API returns its HTML error
-page, the script falls back to these published totals and says so. No key is
+The numbers above come from a live call, keyed locally through
+`CENSUS_API_KEY` and never committed; the script reports its source:
+
+```text
+Population source: Census API 2020 PL (P1_001N)
+Population sum: 8,804,190 (sanity target ~8.8 million)
+Population sanity check: True
+```
+
+`fetch_populations()` holds the request. If the key is missing, or the API
+answers with its HTML error page instead of JSON, the script prints
+`Census API fallback: ...` and uses the same published totals, so this table
+and the figure are unchanged — only the source line differs. No key is
 stored in the repository. The **196** rows with `Borough == "Unspecified"`
 are set aside because they have no population to normalize against.
 
@@ -156,7 +166,7 @@ Task 2 can move a borough rate too.
 
 | Number | Primary method | Second method | Same? |
 | --- | --- | --- | --- |
-| Population sum | five county totals from `fetch_populations()` summed → 8,804,190 | published five-county total → 8,804,190 | yes |
+| Population sum | rows returned by the API, summed → 8,804,190 | published five-county total → 8,804,190 | yes |
 | Bronx per 1,000 | table → 50.7071 | 74,674 ÷ 1,472,654 × 1,000 → 50.7071 | yes |
 | Rank change | sort by raw count vs. per 1,000 | two orderings printed by the script | yes |
 
