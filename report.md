@@ -176,7 +176,8 @@ hours are stable.
 The day × hour heat map is mostly the same shape every night: a bright
 band at 21:00–23:00 and a dark band at 03:00–06:00. The exception is
 **2 November at 01:00**, with **308** noise calls, roughly double the other
-Sundays (113, 163, 144, 181). At 02:00 the count is only 91.
+Sundays (113, 163, 144, 181). At 02:00 the count is 91, in line with the
+other Sundays (63, 72, 81, 150) rather than a doubled second pass.
 
 The likely cause is the end of daylight saving time. Clocks fell back from
 02:00 to 01:00 on 2 November 2025, so the 01:00–01:59 wall-clock hour
